@@ -1,5 +1,6 @@
 import time
 import threading
+import logging
 try:
     from greenlet import getcurrent as get_ident
 except ImportError:
@@ -7,6 +8,9 @@ except ImportError:
         from thread import get_ident
     except ImportError:
         from _thread import get_ident
+
+camera_streaming_logger = logging.getLogger('Garage.Camera.Streaming')
+camera_streaming_logger.setLevel(logging.INFO)
 
 
 class CameraEvent(object):
@@ -56,7 +60,7 @@ class BaseCamera(object):
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
-
+    base_camera_logger = logging.getLogger('BaseCamera')
     def __init__(self):
         """Start the background camera thread if it isn't running yet."""
         if BaseCamera.thread is None:
@@ -88,7 +92,7 @@ class BaseCamera(object):
     @classmethod
     def _thread(cls):
         """Camera background thread."""
-        print('Starting camera thread.')
+        camera_streaming_logger.info('Starting camera thread.')
         frames_iterator = cls.frames()
         for frame in frames_iterator:
             BaseCamera.frame = frame
@@ -99,6 +103,6 @@ class BaseCamera(object):
             # the last 10 seconds then stop the thread
             if time.time() - BaseCamera.last_access > 10:
                 frames_iterator.close()
-                print('Stopping camera thread due to inactivity.')
+                camera_streaming_logger.info('Stopping camera thread due to inactivity.')
                 break
         BaseCamera.thread = None
